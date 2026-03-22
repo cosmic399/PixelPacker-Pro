@@ -1,0 +1,46 @@
+# 📑 Image Arranger v2: Multi-Page & Componentized Architecture
+
+This document serves as the master guide for evolving Image Arranger into a multi-page document editor using **Svelte 5 Runes** and a **Code Reuse** strategy.
+
+---
+
+## 🏗️ 1. Global State Refactoring
+* **Nested Data Structure:** Replace the flat `images` array with a `$state` array called `pages`. Each entry is an object: `{ id: uuid, images: [] }`.
+* **Active Index Tracking:** Use `activePageIndex` (integer) to track which page is currently rendered.
+* **ID Stability:** Use `crypto.randomUUID()` for pages to ensure images remain attached to their specific page container even when indices shift.
+
+## 🎮 2. Navigation & Insertion (Interaction Layer)
+* **Specific Position Insertion:** Use `pages.splice(activePageIndex + 1, 0, newPage)` to insert a blank page immediately after the current view.
+* **The [Current / Total] Box:** Implement a bound input `[1 / 5]` that validates "Enter" to jump to a specific index.
+* **Directional Arrows:** Implement "Forward" and "Backward" buttons. 
+    * Disable "Backward" at index 0.
+    * Disable "Forward" at `pages.length - 1`.
+* **Add Page Button:** A rectangular, curved-edge button with a `+` icon and an "Add Page" tooltip on hover.
+
+## 🧱 3. Code Reuse (Componentization)
+* **Reusable `Canvas.svelte`:** Extract the A4 (794×1123px) logic into a dedicated component.
+* **Encapsulated Dragging:** Keep the **Virtual vs. Clamped** coordinate physics inside the canvas component to prevent images from sticking to edges.
+* **Zoom Normalization:** Ensure dragging speed is divided by `canvasScale` within the component to maintain 1:1 parity at any zoom level.
+* **Prop Flow:** Pass only the active page's images to the reused component: `<Canvas bind:images={pages[activePageIndex].images} />`.
+
+## 🖱️ 4. Dragging Logic Consistency
+* **Local Origin:** All dragging math is calculated relative to the $(0,0)$ top-left of the *current* page.
+* **Pointer Capture:** Use `setPointerCapture` in `ImageItem.svelte` to maintain drag focus within the active page boundaries.
+* **Transform Split:** Maintain the dual-layer DOM: Outer wrapper handles translation ($x, y$), inner div handles rotation.
+
+## 📄 5. Multi-Page Export Pipeline
+* **Sequential Renderer:** Update `exportUtils.js` to iterate through the `pages` array.
+* **Canvas Rehydration:** For each page, clear the 2× off-screen canvas, replay the transforms, and call `pdf.addPage()` for every page after the first.
+* **Optimization:** Use JPEG 0.7 compression to keep the final multi-page PDF size manageable.
+
+---
+
+## 🛠️ Implementation Snippet: Insertion Logic
+```javascript
+function insertPage() {
+  const newPage = { id: crypto.randomUUID(), images: [] };
+  // Splice adds at a specific index, shifting others forward
+  pages.splice(activePageIndex + 1, 0, newPage);
+  // Auto-navigate to the new blank page
+  activePageIndex += 1;
+}
