@@ -370,7 +370,7 @@
 							<Sparkles class="h-5 w-5 text-black" />
 						</div>
 						<div>
-							<h1 class="text-xl font-light tracking-wide" style="color: var(--text-main);" >Image Arranger</h1>
+							<h1 class="text-xl font-light tracking-wide" style="color: var(--text-main);" >PixelPacker Pro</h1>
 							<p class="text-xs font-light" style="color: var(--text-muted);">A4 Canvas</p>
 						</div>
 					</div>

@@ -1,4 +1,4 @@
-# 🎨 Image Arranger
+# 🎨 PixelPacker Pro
 
 A professional-grade image collage and arrangement tool built with **SvelteKit 5** and powerhouse **Constraint Programming (OR-Tools)** for smart layouts.
 

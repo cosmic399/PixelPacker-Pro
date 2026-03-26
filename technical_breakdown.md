@@ -1,4 +1,4 @@
-# High-Level Technical Breakdown
+# PixelPacker Pro - Technical Breakdown
 
 ## 1. Rendering Architecture
 **Concept:** Dual-Coordinate Rendering System

@@ -1,4 +1,4 @@
-# Summary of Added Features & Components
+# PixelPacker Pro - Added Features Summary
 
 This document outlines everything that was newly introduced to the Image Arranger app to transform it into a robust multi-page editor.
 
