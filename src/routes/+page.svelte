@@ -29,6 +29,7 @@
 	// A4 dimensions at 96 DPI: 210mm x 297mm = 794px x 1123px
 	const A4_WIDTH = 794;
 	const A4_HEIGHT = 1123;
+	const A4_AREA = A4_WIDTH * A4_HEIGHT; // 891,962 px²
 
 	let pages = $state([{ id: crypto.randomUUID(), images: [] }]);
 	let activePageIndex = $state(0);
@@ -87,7 +88,7 @@
 			const displayW = img.width * (img.scaleX || 1);
 			const displayH = img.height * (img.scaleY || 1);
 
-			img.x = (A4_WIDTH - displayW) / 2 + index * 20; 
+			img.x = (A4_WIDTH - displayW) / 2 + index * 20;
 			img.y = (A4_HEIGHT - displayH) / 2 + index * 20;
 			img.zIndex = currentZ++;
 		});
@@ -95,7 +96,9 @@
 	}
 
 	function handleImageUpdate(updatedImage) {
-		pages[activePageIndex].images = pages[activePageIndex].images.map((img) => (img.id === updatedImage.id ? updatedImage : img));
+		pages[activePageIndex].images = pages[activePageIndex].images.map((img) =>
+			img.id === updatedImage.id ? updatedImage : img
+		);
 	}
 
 	function handleImageDelete(id) {
@@ -112,7 +115,9 @@
 	function handleImageSelect(id) {
 		selectedImageId = id;
 		const maxZ = Math.max(...pages[activePageIndex].images.map((img) => img.zIndex), 0);
-		pages[activePageIndex].images = pages[activePageIndex].images.map((img) => (img.id === id ? { ...img, zIndex: maxZ + 1 } : img));
+		pages[activePageIndex].images = pages[activePageIndex].images.map((img) =>
+			img.id === id ? { ...img, zIndex: maxZ + 1 } : img
+		);
 	}
 
 	function clearAll() {
@@ -187,7 +192,7 @@
 	}
 
 	async function exportImage(format) {
-		const hasImages = pages.some(p => p.images.length > 0);
+		const hasImages = pages.some((p) => p.images.length > 0);
 		if (!canvasRef || !hasImages) {
 			alert('Please add some images first!');
 			return;
@@ -233,7 +238,9 @@
 		}
 	}
 
-	const selectedImage = $derived(pages[activePageIndex]?.images.find((img) => img.id === selectedImageId));
+	const selectedImage = $derived(
+		pages[activePageIndex]?.images.find((img) => img.id === selectedImageId)
+	);
 
 	function handleCropRequest(image) {
 		cropImageData = image;
@@ -264,6 +271,21 @@
 			return;
 		}
 
+		// Pre-check: total image area must not exceed canvas area
+		const totalArea = currentImages.reduce((sum, img) => {
+			const w = Math.max(1, Math.round((img.width || 100) * (img.scaleX || img.scale || 1)));
+			const h = Math.max(1, Math.round((img.height || 100) * (img.scaleY || img.scale || 1)));
+			return sum + w * h;
+		}, 0);
+		if (totalArea > A4_AREA) {
+			arrangeError = `Images are too large to fit the canvas (${Math.round(totalArea / 1000)}k px² vs ${Math.round(A4_AREA / 1000)}k px² canvas). Scale them down first.`;
+			setTimeout(() => (arrangeError = null), 5000);
+			return;
+		}
+
+		// Reset zoom to 100% for a clean arrangement view
+		canvasScale = 1;
+
 		isArranging = true;
 		arrangeError = null;
 
@@ -285,8 +307,8 @@
 			return;
 		}
 
-		const payload = { 
-			canvas: { width: A4_WIDTH, height: A4_HEIGHT }, 
+		const payload = {
+			canvas: { width: A4_WIDTH, height: A4_HEIGHT },
 			images,
 			allow_rotation: allowRotation
 		};
@@ -328,13 +350,19 @@
 
 				let newX = pos.x;
 				let newY = pos.y;
-				
+
 				// The OR-Tools solver returns the VISUAL top-left coordinate.
 				// If the solver rotated the image, CSS will rotate it from the center.
 				// We must offset the CSS left/top so the visual bounding box matches the solver's placement.
 				if (pos.rotation === 90) {
-					const displayW = Math.max(1, Math.round((img.width || 100) * (img.scaleX || img.scale || 1)));
-					const displayH = Math.max(1, Math.round((img.height || 100) * (img.scaleY || img.scale || 1)));
+					const displayW = Math.max(
+						1,
+						Math.round((img.width || 100) * (img.scaleX || img.scale || 1))
+					);
+					const displayH = Math.max(
+						1,
+						Math.round((img.height || 100) * (img.scaleY || img.scale || 1))
+					);
 					newX = pos.x + (displayH - displayW) / 2;
 					newY = pos.y + (displayW - displayH) / 2;
 				}
@@ -359,7 +387,10 @@
 
 	<div class="relative z-10 min-h-screen">
 		<!-- Minimal Header -->
-		<header class="relative z-50 backdrop-blur-xl" style="border-bottom: 1px solid var(--header-border); background: var(--header-bg);">
+		<header
+			class="relative z-50 backdrop-blur-xl"
+			style="border-bottom: 1px solid var(--header-border); background: var(--header-bg);"
+		>
 			<div class="mx-auto max-w-[1400px] px-6 py-4">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-3">
@@ -370,17 +401,22 @@
 							<Sparkles class="h-5 w-5 text-black" />
 						</div>
 						<div>
-							<h1 class="text-xl font-light tracking-wide" style="color: var(--text-main);" >PixelPacker Pro</h1>
+							<h1 class="text-xl font-light tracking-wide" style="color: var(--text-main);">
+								PixelPacker Pro
+							</h1>
 							<p class="text-xs font-light" style="color: var(--text-muted);">A4 Canvas</p>
 						</div>
 					</div>
 
 					<div class="flex items-center gap-3">
-						<button 
-							onclick={() => activeTheme = activeTheme === 'professional' ? 'ultimate' : 'professional'}
+						<button
+							onclick={() =>
+								(activeTheme = activeTheme === 'professional' ? 'ultimate' : 'professional')}
 							class="flex h-10 w-10 items-center justify-center rounded-xl backdrop-blur-xl transition-all"
 							style="border: 1px solid var(--panel-border); background: var(--panel-bg);"
-							title={activeTheme === 'professional' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+							title={activeTheme === 'professional'
+								? 'Switch to Dark Mode'
+								: 'Switch to Light Mode'}
 						>
 							{#if activeTheme === 'professional'}
 								<Moon class="h-4 w-4" style="color: var(--accent);" />
@@ -388,10 +424,13 @@
 								<Sun class="h-4 w-4" style="color: #C5F40E" />
 							{/if}
 						</button>
-						<div class="h-6 w-px mx-1" style="background: var(--divider);"></div>
+						<div class="mx-1 h-6 w-px" style="background: var(--divider);"></div>
 
 						<!-- Page Navigation -->
-						<div class="flex items-center gap-2 rounded-xl px-2 py-1.5 backdrop-blur-xl" style="border: 1px solid var(--panel-border); background: var(--panel-bg);">
+						<div
+							class="flex items-center gap-2 rounded-xl px-2 py-1.5 backdrop-blur-xl"
+							style="border: 1px solid var(--panel-border); background: var(--panel-bg);"
+						>
 							<button
 								onclick={() => goToPage(activePageIndex - 1)}
 								disabled={activePageIndex === 0}
@@ -400,7 +439,10 @@
 							>
 								<ChevronLeft class="h-4 w-4" />
 							</button>
-							<div class="flex items-center gap-1 text-sm font-light" style="color: var(--text-sub);">
+							<div
+								class="flex items-center gap-1 text-sm font-light"
+								style="color: var(--text-sub);"
+							>
 								<input
 									type="text"
 									value={activePageIndex + 1}
@@ -453,17 +495,26 @@
 								class="h-1.5 flex-1 cursor-pointer appearance-none rounded-lg"
 								style="background: var(--slider-track); accent-color: var(--accent);"
 							/>
-							<span class="min-w-[3.5rem] text-right text-sm font-medium" style="color: var(--text-sub);">
+							<span
+								class="min-w-[3.5rem] text-right text-sm font-medium"
+								style="color: var(--text-sub);"
+							>
 								{Math.round(canvasScale * 100)}%
 							</span>
 							<ZoomIn class="h-4 w-4 flex-shrink-0" style="color: var(--text-muted);" />
 						</div>
 
 						<!-- Auto-Arrange Tools -->
-						<div class="flex items-center gap-4 rounded-xl px-2 py-1 backdrop-blur-xl" style="border: 1px solid var(--panel-border); background: var(--panel-bg);">
-							<label class="flex cursor-pointer items-center gap-2 px-2 text-sm font-medium" style="color: var(--text-sub);">
-								<input 
-									type="checkbox" 
+						<div
+							class="flex items-center gap-4 rounded-xl px-2 py-1 backdrop-blur-xl"
+							style="border: 1px solid var(--panel-border); background: var(--panel-bg);"
+						>
+							<label
+								class="flex cursor-pointer items-center gap-2 px-2 text-sm font-medium"
+								style="color: var(--text-sub);"
+							>
+								<input
+									type="checkbox"
 									bind:checked={allowRotation}
 									class="h-4 w-4 rounded focus:ring-offset-0"
 									style="accent-color: var(--accent);"
@@ -487,7 +538,9 @@
 									Auto-Arrange
 								</button>
 								{#if arrangeError}
-									<div class="absolute top-full right-0 z-50 mt-2 w-72 rounded-xl border border-red-400/30 bg-red-500/90 px-4 py-3 text-sm text-white shadow-xl backdrop-blur-xl">
+									<div
+										class="absolute top-full right-0 z-50 mt-2 w-72 rounded-xl border border-red-400/30 bg-red-500/90 px-4 py-3 text-sm text-white shadow-xl backdrop-blur-xl"
+									>
 										{arrangeError}
 									</div>
 								{/if}
@@ -498,16 +551,20 @@
 						<div class="flex items-center gap-2">
 							<button
 								onclick={() => exportImage('png')}
-								disabled={isExporting || pages.every(p => p.images.length === 0) || pages.length > 1}
+								disabled={isExporting ||
+									pages.every((p) => p.images.length === 0) ||
+									pages.length > 1}
 								class="rounded-xl px-4 py-2 text-sm font-semibold text-black shadow-lg transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-30"
 								style="background: linear-gradient(135deg, #C5F40E, #00E5CC); box-shadow: 0 0 14px rgba(197,244,14,0.3);"
-								title={pages.length > 1 ? "PNG export is only available for single-page documents" : ""}
+								title={pages.length > 1
+									? 'PNG export is only available for single-page documents'
+									: ''}
 							>
 								PNG
 							</button>
 							<button
 								onclick={() => exportImage('pdf')}
-								disabled={isExporting || pages.every(p => p.images.length === 0)}
+								disabled={isExporting || pages.every((p) => p.images.length === 0)}
 								class="rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-30"
 								style="background: linear-gradient(135deg, #FF2D78, #FF6B35); box-shadow: 0 0 14px rgba(255,45,120,0.3);"
 							>
@@ -524,7 +581,10 @@
 				<!-- Sidebar -->
 				<aside class="col-span-3 space-y-4">
 					<!-- Upload -->
-					<div class="rounded-2xl p-4 backdrop-blur-xl" style="border: 1px solid var(--panel-border); background: var(--panel-bg);">
+					<div
+						class="rounded-2xl p-4 backdrop-blur-xl"
+						style="border: 1px solid var(--panel-border); background: var(--panel-bg);"
+					>
 						<ImageUpload onImagesAdded={handleImagesAdded} />
 					</div>
 
@@ -535,7 +595,10 @@
 							style="border: 1px solid var(--panel-border); background: var(--panel-bg);"
 						>
 							<div class="mb-4 flex items-center justify-between">
-								<h2 class="text-xs font-semibold tracking-wider uppercase" style="color: var(--text-dim);">
+								<h2
+									class="text-xs font-semibold tracking-wider uppercase"
+									style="color: var(--text-dim);"
+								>
 									Images ({pages[activePageIndex].images.length})
 								</h2>
 								<button
@@ -568,7 +631,9 @@
 													{image.file.name}
 												</p>
 												<p class="mt-0.5 text-xs" style="color: var(--text-muted);">
-													{Math.round(image.width * image.scale)} × {Math.round(image.height * image.scale)}
+													{Math.round(image.width * image.scale)} × {Math.round(
+														image.height * image.scale
+													)}
 												</p>
 											</div>
 										</div>
@@ -670,6 +735,8 @@
 	}
 
 	@keyframes spin {
-		to { transform: rotate(360deg); }
+		to {
+			transform: rotate(360deg);
+		}
 	}
 </style>
